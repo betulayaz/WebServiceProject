@@ -1,0 +1,114 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <h2></h2>
+        <label>
+            Select Country
+        </label>
+        @Html.DropDownList("Countries", @ViewBag.country as List<SelectListItem>, "---Select Country---", new { @class = "form-control" })
+    </div>
+</div>
+<table class="table"  id="Countrytable">
+    <thead>
+        <tr>
+            <th scope="col">Ülke</th>
+            <th scope="col">Ülke Başkent</th>
+            <th scope="col">Ülke Kısaltması</th>
+            <th scope="col">Ülke Para Birimi</th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td id="countryname"></td>
+            <td id="capitalcity"></td>
+            <td id="countrycode"></td>
+            <td id="countrycurrency"></td>
+            <td> <button onclick="add()">Kaydet</button></td>
+        </tr>
+    </tbody>
+</table>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script>
+    $(document).ready(function () {
+        document.getElementById("Countrytable").setAttribute("style", "display:none !important;");
+    });
+    $(function () {
+        $('#Countries').change(function () {           
+            document.getElementById("Countrytable").setAttribute("style", "display: !important;");
+            var el = document.getElementById("Countries");
+            var county = el.selectedOptions[0].text;
+            var countyCode = el.selectedOptions[0].value;
+            $('#countryname').empty();
+            $('#countryname').append('' + county + '');
+
+            $.ajax({
+                type: "post",
+                dataType: "json",
+                url: '/getcapitalcity-' + countyCode,
+                success: function (data) {
+                    $('#capitalcity').empty();
+                    $('#capitalcity').append('' + data + '');
+                },
+                failure: function (data) {
+                    alert('error occured');
+                }
+
+            });
+
+            $.ajax({
+                type: "post",
+                dataType: "json",
+                url: '/getcountrycode-' + county,
+                success: function (data) {
+                    $('#countrycode').empty();
+                    $('#countrycode').append('' + data + '');
+                },
+                failure: function (data) {
+                    alert('error occured');
+                }
+
+            });
+
+            $.ajax({
+                type: "post",
+                dataType: "json",
+                url: '/getcountrycurrency-' + countyCode,
+                success: function (data) {
+                    $('#countrycurrency').empty();
+                    $('#countrycurrency').append('' + data.sISOCode + '(' + data.sName +')');
+                },
+                failure: function (data) {
+                    alert('error occured');
+                }
+
+            });
+        });      
+    });
+    function add() {
+        var formData = new FormData();
+        formData.append("country_name", $("#countryname")[0].innerText);
+        formData.append("country_capital_city", $("#capitalcity")[0].innerText);
+        formData.append("country_code", $("#countrycode")[0].innerText);
+        formData.append("country_currency", $("#countrycurrency")[0].innerText);
+        var request = new XMLHttpRequest();
+        request.open("POST", "/createdb?type=add");
+        request.onload = function () {
+            if (request.readyState === request.DONE) {
+                alert("Başarılı bir şekilde kayıt yapılmıştır.");
+                $("#countryname")[0].innerText = '';
+                $("#capitalcity")[0].innerText = '';
+                $("#countrycode")[0].innerText = '';
+                $("#countrycurrency")[0].innerText = '';
+                document.getElementById("Countrytable").setAttribute("style", "display:none !important;");
+            }
+            else {
+                alert("Kayıt sırasında bir hata oluştu.");
+            }
+        };
+        request.send(formData);
+    };
+</script>
